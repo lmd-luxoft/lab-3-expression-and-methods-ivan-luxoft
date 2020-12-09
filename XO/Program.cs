@@ -2,15 +2,16 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace XO
 {
     class Program
     {
-       static char win = '-';
-       static string PlayerName1, PlayerName2;
-       static char[] cells = new char[]{ '-', '-', '-', '-', '-', '-', '-', '-', '-' };
+        static char win = '-';
+        static string PlayerName1, PlayerName2;
+        static char[] cells = new char[] { '-', '-', '-', '-', '-', '-', '-', '-', '-' };
 
         static void show_cells()
         {
@@ -24,14 +25,16 @@ namespace XO
             Console.WriteLine("Текущая ситуация (---пустой):");
             Console.WriteLine($"-{cells[0]}-|-{cells[1]}-|-{cells[2]}-");
             Console.WriteLine($"-{cells[3]}-|-{cells[4]}-|-{cells[5]}-");
-            Console.WriteLine($"-{cells[6]}-|-{cells[7]}-|-{cells[8]}-");        
+            Console.WriteLine($"-{cells[6]}-|-{cells[7]}-|-{cells[8]}-");
         }
         static void make_move(int num)
         {
             string raw_cell;
             int cell;
-            if (num == 1) Console.Write(PlayerName1);
-            else Console.Write(PlayerName2);
+            if (num == 1)
+                Console.Write(PlayerName1);
+            else
+                Console.Write(PlayerName2);
             do
             {
                 Console.Write(",введите номер ячейки,сделайте свой ход:");
@@ -39,7 +42,7 @@ namespace XO
                 raw_cell = Console.ReadLine();
             }
             while (!Int32.TryParse(raw_cell, out cell));
-            while (cell > 9 || cell < 1 || cells[cell - 1] == 'O' || cells[cell - 1] == 'X')
+            while (IsUnCorrectInputCell(cell) || IsCellFill(cell))
             {
                 do
                 {
@@ -49,20 +52,47 @@ namespace XO
                 while (!Int32.TryParse(raw_cell, out cell));
                 Console.WriteLine();
             }
-            if (num == 1) cells[cell - 1] = 'X';
-            else cells[cell - 1] = 'O';
-            
+            if (num == 1)
+                cells[cell - 1] = 'X';
+            else
+                cells[cell - 1] = 'O';
         }
+
+        static bool IsCellFill(int cell)
+        {
+            return cells[cell - 1] == 'O' || cells[cell - 1] == 'X';
+        }
+
+        static bool IsUnCorrectInputCell(int cell)
+        {
+            return cell < 1 || cell > 9;
+        }
+
         static char check()
         {
-            for (int i = 0; i < 3; i++)
-                if (cells[i * 3] == cells[i * 3 + 1] && cells[i * 3 + 1] == cells[i * 3 + 2])
-                    return cells[i];
-                else if (cells[i] == cells[i + 3] && cells[i + 3] == cells[i + 6])
-                    return cells[i];
-                else if ((cells[2] == cells[4] && cells[4] == cells[6]) || (cells[0] == cells[4] && cells[4] == cells[8]))
-                    return cells[i];
+            if (IsDiagLineClose())
+                return cells[0];
+
+            for (int column = 0; column < 3; column++)
+                if (IsHorizontalLineClose(column) || IsVerticalLineClose(column))
+                    return cells[column];
+
             return '-';
+        }
+
+        static bool IsHorizontalLineClose(int column)
+        {
+            return cells[column * 3] == cells[column * 3 + 1] && cells[column * 3 + 1] == cells[column * 3 + 2];
+        }
+
+        static bool IsVerticalLineClose(int column)
+        {
+            return cells[column] == cells[column + 3] && cells[column + 3] == cells[column + 6];
+        }
+
+        static bool IsDiagLineClose()
+        {
+            return (cells[2] == cells[4] && cells[4] == cells[6]) || (cells[0] == cells[4] && cells[4] == cells[8]);
         }
 
         static void result()
@@ -72,6 +102,11 @@ namespace XO
             else if (win == 'O')
                 Console.WriteLine($"{PlayerName2} вы  выиграли поздравляем {PlayerName1} а вы проиграли...");
 
+        }
+
+        static int PlayerShouldPlay(int gameStep)
+        {
+            return (gameStep - 1) % 2 + 1;
         }
 
         static void Main(string[] args)
@@ -90,21 +125,25 @@ namespace XO
 
             for (int move = 1; move <= 9; move++)
             {
-                if (move % 2 != 0) make_move(1);
-                else make_move(2);
+                make_move(PlayerShouldPlay(move));
 
                 show_cells();
 
                 if (move >= 5)
                 {
                     win = check();
-                    if (win != '-')
+                    if (IsWinnerFound())
                         break;
                 }
-
             }
 
             result();
+            Console.ReadKey();
+        }
+
+        static bool IsWinnerFound()
+        {
+            return win != '-';
         }
     }
 }
